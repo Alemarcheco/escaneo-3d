@@ -52,9 +52,19 @@ final class ModeloCaptura: ObservableObject {
         sesion = s
         fase = .preparando
 
+        // Se revisa el estado de la sesión cada 0,3 s. Escuchar solo `stateUpdates`
+        // perdía el paso a "ready" y la pantalla se quedaba en "Preparando…".
         tareaEstados = Task { [weak self] in
-            for await estado in s.stateUpdates {
-                self?.cambio(estado)
+            var anterior = ""
+            while !Task.isCancelled {
+                guard let self, self.sesion === s else { return }
+                let estado = s.state
+                let clave = String(describing: estado)
+                if clave != anterior {
+                    anterior = clave
+                    self.cambio(estado)
+                }
+                try? await Task.sleep(nanoseconds: 300_000_000)
             }
         }
     }
