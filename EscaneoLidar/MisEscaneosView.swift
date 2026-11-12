@@ -12,6 +12,13 @@ struct MisEscaneosView: View {
 
     @State private var escaneos: [Escaneo] = []
     @State private var verArchivo: ArchivoVista?
+    @State private var visor: Visor?
+
+    struct Visor: Identifiable {
+        let archivos: [URL]
+        let inicial: URL?
+        let id = UUID()
+    }
 
     var body: some View {
         List {
@@ -24,7 +31,11 @@ struct MisEscaneosView: View {
                     ForEach(e.archivos, id: \.self) { archivo in
                         HStack {
                             Button {
-                                verArchivo = ArchivoVista(url: archivo)
+                                if Visor3DView.sePuedeVer(archivo) {
+                                    visor = Visor(archivos: e.archivos, inicial: archivo)
+                                } else {
+                                    verArchivo = ArchivoVista(url: archivo)
+                                }
                             } label: {
                                 VStack(alignment: .leading) {
                                     Text(archivo.lastPathComponent)
@@ -40,6 +51,13 @@ struct MisEscaneosView: View {
                             .buttonStyle(.borderless)
                         }
                     }
+                    if e.archivos.contains(where: Visor3DView.sePuedeVer) {
+                        Button {
+                            visor = Visor(archivos: e.archivos, inicial: nil)
+                        } label: {
+                            Label("Ver en 3D", systemImage: "cube.fill")
+                        }
+                    }
                     Button("Borrar este escaneo", role: .destructive) {
                         try? FileManager.default.removeItem(at: e.carpeta)
                         cargar()
@@ -52,6 +70,9 @@ struct MisEscaneosView: View {
         .refreshable { cargar() }
         .sheet(item: $verArchivo) { a in
             VistaPreviaArchivo(url: a.url).ignoresSafeArea()
+        }
+        .fullScreenCover(item: $visor) { v in
+            Visor3DView(archivos: v.archivos, inicial: v.inicial)
         }
     }
 

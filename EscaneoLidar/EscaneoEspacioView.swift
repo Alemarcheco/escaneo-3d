@@ -4,6 +4,7 @@ import RealityKit
 struct EscaneoEspacioView: View {
     @StateObject private var control = ControladorEscaneo()
     @State private var pedirGuardar = false
+    @State private var verVisor = false
 
     var body: some View {
         ZStack {
@@ -72,9 +73,15 @@ struct EscaneoEspacioView: View {
         }
         .alert("Escaneo", isPresented: Binding(get: { control.mensajeFinal != nil },
                                               set: { if !$0 { control.mensajeFinal = nil } })) {
+            if control.ultimosArchivos.contains(where: Visor3DView.sePuedeVer) {
+                Button("Ver en 3D") { verVisor = true }
+            }
             Button("OK", role: .cancel) {}
         } message: {
             Text(control.mensajeFinal ?? "")
+        }
+        .fullScreenCover(isPresented: $verVisor) {
+            Visor3DView(archivos: control.ultimosArchivos)
         }
         .onDisappear { control.pausar() }
     }

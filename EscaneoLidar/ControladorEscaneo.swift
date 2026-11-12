@@ -11,6 +11,8 @@ final class ControladorEscaneo: NSObject, ObservableObject, ARSessionDelegate {
     @Published var aviso = "Mueve el iPhone despacio apuntando a paredes, piso y objetos."
     @Published var guardando = false
     @Published var mensajeFinal: String?
+    /// Archivos del último escaneo guardado (para abrir el visor 3D).
+    @Published var ultimosArchivos: [URL] = []
 
     private weak var vista: ARView?
     private var anclas: [UUID: ARMeshAnchor] = [:]
@@ -115,12 +117,14 @@ final class ControladorEscaneo: NSObject, ObservableObject, ARSessionDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             let carpeta = Almacen.nuevaCarpeta(prefijo: "Espacio")
             var hechos: [String] = []
+            var urls: [URL] = []
             var errores: [String] = []
             if malla {
                 do {
                     let archivos = try ExportadorMalla.exportar(copiaAnclas, carpeta: carpeta, nombre: "malla",
                                                                 extensiones: ["obj", "usdz", "stl"])
                     hechos += archivos.map { $0.lastPathComponent }
+                    urls += archivos
                 } catch {
                     errores.append(error.localizedDescription)
                 }
@@ -133,6 +137,7 @@ final class ControladorEscaneo: NSObject, ObservableObject, ARSessionDelegate {
                         let url = carpeta.appendingPathComponent("nube_puntos.ply")
                         try nubeActual.guardarPLY(en: url)
                         hechos.append(url.lastPathComponent)
+                        urls.append(url)
                     } catch {
                         errores.append(error.localizedDescription)
                     }
@@ -141,6 +146,7 @@ final class ControladorEscaneo: NSObject, ObservableObject, ARSessionDelegate {
             if hechos.isEmpty { try? FileManager.default.removeItem(at: carpeta) }
             DispatchQueue.main.async {
                 self.guardando = false
+                self.ultimosArchivos = urls
                 if hechos.isEmpty {
                     self.mensajeFinal = "No se guardó nada.\n" + errores.joined(separator: "\n")
                 } else {

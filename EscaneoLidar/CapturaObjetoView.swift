@@ -175,8 +175,8 @@ struct CapturaObjetoView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { modelo.empezar() }
         .onDisappear { modelo.cancelar() }
-        .sheet(item: $verModelo) { archivo in
-            VistaPreviaArchivo(url: archivo.url).ignoresSafeArea()
+        .fullScreenCover(item: $verModelo) { archivo in
+            Visor3DView(archivos: [archivo.url])
         }
     }
 
